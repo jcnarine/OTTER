@@ -22,9 +22,6 @@
 #include <GameObjectTag.h>
 #include <InputHelpers.h>
 
-#define GLM_ENABLE_EXPERIMENTAL
-#include "glm/gtx/string_cast.hpp"
-
 #include <IBehaviour.h>
 #include <CameraControlBehaviour.h>
 #include <FollowPathBehaviour.h>
