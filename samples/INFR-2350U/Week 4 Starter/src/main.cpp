@@ -50,6 +50,10 @@ int main() {
 		passthroughShader->LoadShaderPartFromFile("shaders/passthrough_frag.glsl", GL_FRAGMENT_SHADER);
 		passthroughShader->Link();
 
+		Shader::sptr colorCorrectionShader = Shader::Create();
+		colorCorrectionShader->LoadShaderPartFromFile("shaders/passthrough_vert.glsl", GL_VERTEX_SHADER);
+		colorCorrectionShader->LoadShaderPartFromFile("shaders/Post/color_correction_frag.glsl", GL_FRAGMENT_SHADER);
+		colorCorrectionShader->Link();
 
 		// Load our shaders
 		Shader::sptr shader = Shader::Create();
@@ -78,8 +82,34 @@ int main() {
 		shader->SetUniform("u_LightAttenuationLinear", lightLinearFalloff);
 		shader->SetUniform("u_LightAttenuationQuadratic", lightQuadraticFalloff);
 
+		PostEffect* basicEffect;
+
+		std::vector<PostEffect*> effects;
+		int activeEffect=0;
+
+		PostEffect* sepiaEffect;
+		PostEffect* greyscaleEffect;
+		//PostEffect* colorCorrect;
+		Framebuffer* colorCorrect;
+
 		// We'll add some ImGui controls to control our shader
 		BackendHandler::imGuiCallbacks.push_back([&]() {
+
+			if (ImGui::CollapsingHeader("Effect Controls"))
+			{
+				ImGui::SliderInt("Chosen Effect", &activeEffect, 0, effects.size() -1);
+				
+				if (activeEffect == 0){
+				ImGui::Text("Active Effect : Sepia Effect");
+				}
+				if (activeEffect == 1){
+				ImGui::Text("Active Effect : Greyscale Effect");
+				}
+				if (activeEffect == 2) {
+				ImGui::Text("Active Effect : Color Correction Effect");
+				}
+			}
+
 			if (ImGui::CollapsingHeader("Environment generation"))
 			{
 				if (ImGui::Button("Regenerate Environment", ImVec2(200.0f, 40.0f)))
@@ -154,6 +184,8 @@ int main() {
 		Texture2D::sptr box = Texture2D::LoadFromFile("images/box.bmp");
 		Texture2D::sptr boxSpec = Texture2D::LoadFromFile("images/box-reflections.bmp");
 		Texture2D::sptr simpleFlora = Texture2D::LoadFromFile("images/SimpleFlora.png");
+		LUT3D testCube("cubes/changedcube.cube");
+          
 
 		// Load the cube map
 		//TextureCubeMap::sptr environmentMap = TextureCubeMap::LoadFromImages("images/cubemaps/skybox/sample.jpg");
@@ -179,7 +211,7 @@ int main() {
 		GameScene::RegisterComponentType<Camera>();
 
 		// Create a scene, and set it to be the active scene in the application
-		GameScene::sptr scene = GameScene::Create("test");
+		GameScene::sptr scene = GameScene::Create("ILE 2");
 		Application::Instance().ActiveScene = scene;
 
 		// We can create a group ahead of time to make iterating on the group faster
@@ -263,17 +295,43 @@ int main() {
 			BehaviourBinding::Bind<CameraControlBehaviour>(cameraObject);
 		}
 
-		Framebuffer* testBuffer;
-		GameObject framebufferObject = scene->CreateEntity("Basic Buffer");
-		{
-			int width, height;
-			glfwGetWindowSize(BackendHandler::window, &width, &height);
+		int width, height;
+		glfwGetWindowSize(BackendHandler::window, &width, &height);
 
-			testBuffer = &framebufferObject.emplace<Framebuffer>();
-			testBuffer->AddDepthTarget();
-			testBuffer->AddColorTarget(GL_RGBA8);
-			testBuffer->Init(width, height);
+		
+		GameObject colorCorrectionObj = scene->CreateEntity("Color Correct");
+		{
+			colorCorrect = &colorCorrectionObj.emplace<Framebuffer>();
+			colorCorrect->AddColorTarget(GL_RGBA8);
+			colorCorrect->AddDepthTarget();
+			colorCorrect->Init(width, height);
+			
 		}
+		
+		GameObject framebufferObject = scene->CreateEntity("Basic Effect");
+		{
+			basicEffect = &framebufferObject.emplace<PostEffect>();
+			basicEffect->Init(width, height);
+		}
+
+		
+		GameObject greyscaleObject = scene->CreateEntity("Greyscale Effect");
+		{
+			greyscaleEffect = &greyscaleObject.emplace<GreyscaleEffect>() ;
+			greyscaleEffect->Init(width, height);
+		}
+		
+		
+		GameObject sepiaEffectObject = scene->CreateEntity("Sepia Effect");
+		{
+			sepiaEffect = &sepiaEffectObject.emplace<SepiaEffect>() ;
+			sepiaEffect->Init(width, height);
+		}
+
+		effects.push_back(sepiaEffect);
+		effects.push_back(greyscaleEffect);
+		//effects.push_back(colorCorrect);
+
 		#pragma endregion 
 		//////////////////////////////////////////////////////////////////////////////////////////
 
@@ -376,7 +434,12 @@ int main() {
 			});
 
 			// Clear the screen
-			testBuffer->Clear();
+			basicEffect->Clear();
+			colorCorrect->Clear();
+
+			for (int i=0; i<effects.size(); i++){
+			effects[i]->Clear();
+			}
 
 			glClearColor(0.08f, 0.17f, 0.31f, 1.0f);
 			glEnable(GL_DEPTH_TEST);
@@ -416,7 +479,7 @@ int main() {
 			Shader::sptr current = nullptr;
 			ShaderMaterial::sptr currentMat = nullptr;
 
-			testBuffer->Bind();
+			//basicEffect->BindBuffer(0);
 
 			// Iterate over the render group components and draw them
 			renderGroup.each( [&](entt::entity e, RendererComponent& renderer, Transform& transform) {
@@ -435,9 +498,18 @@ int main() {
 				BackendHandler::RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
 			});
 
-			testBuffer->Unbind();
+		    colorCorrect->Unbind(); 
+		    colorCorrectionShader->Bind(); 
 
-			testBuffer->DrawToBackbuffer();
+			colorCorrect->BindColorAsTexture(0,0);
+			testCube.bind(30);
+
+			colorCorrect->DrawFullscreenQuad();
+			
+			testCube.unbind(30);
+			colorCorrect->UnbindTexture(0);
+
+		    colorCorrectionShader->UnBind(); 
 
 			// Draw our ImGui content
 			BackendHandler::RenderImGui();
@@ -458,3 +530,14 @@ int main() {
 	Logger::Uninitialize();
 	return 0;
 }
+
+	/*Before Color Correct
+			
+			basicEffect->UnbindBuffer();
+			
+			effects[activeEffect]->ApplyEffect(basicEffect);
+			effects[activeEffect]->DrawToScreen();
+			
+	*/
+
+			
