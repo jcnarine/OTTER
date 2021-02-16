@@ -313,15 +313,13 @@ int main() {
 			basicEffect = &framebufferObject.emplace<PostEffect>();
 			basicEffect->Init(width, height);
 		}
-
 		
 		GameObject greyscaleObject = scene->CreateEntity("Greyscale Effect");
 		{
 			greyscaleEffect = &greyscaleObject.emplace<GreyscaleEffect>() ;
 			greyscaleEffect->Init(width, height);
 		}
-		
-		
+
 		GameObject sepiaEffectObject = scene->CreateEntity("Sepia Effect");
 		{
 			sepiaEffect = &sepiaEffectObject.emplace<SepiaEffect>() ;

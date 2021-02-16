@@ -1,0 +1,7 @@
+All albedo/diffuse textures created by me 
+All Spec texture gotten from Texture.com
+
+//Ground	https://www.textures.com/download/3DScans0410/132999
+//Trees 	https://www.textures.com/download/3DScans0043/127151
+//GrassStrands	https://www.textures.com/download/PBR0426/137222
+//Well  	https://www.textures.com/download/3DScans0103/128437
