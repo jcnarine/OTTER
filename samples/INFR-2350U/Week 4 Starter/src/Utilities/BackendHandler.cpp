@@ -62,7 +62,11 @@ void BackendHandler::GlfwWindowResizedCallback(GLFWwindow* window, int width, in
 	{
 		buf.Reshape(width, height);
 	});
-	Application::Instance().ActiveScene->Registry().view<ColorCorrectionEffect>().each([=](ColorCorrectionEffect& buf)
+	Application::Instance().ActiveScene->Registry().view<SepiaEffect>().each([=](SepiaEffect& buf)
+	{
+		buf.Reshape(width, height);
+	});
+	Application::Instance().ActiveScene->Registry().view<ColorCorrectEffect>().each([=](ColorCorrectEffect& buf)
 	{
 		buf.Reshape(width, height);
 	});
