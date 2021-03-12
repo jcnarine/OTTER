@@ -32,27 +32,30 @@ layout (std140, binding = 0) uniform u_Lights
 
 layout (binding = 30) uniform sampler2D s_ShadowMap;
 uniform sampler2D s_Diffuse;
-uniform sampler2D s_Diffuse2;
+uniform sampler2D s_Diffusse2;
 uniform sampler2D s_Specular;
 
 uniform float u_TextureMix;
+float closestDepth;
+float currentDepth;
 uniform vec3  u_CamPos;
+vec3  projectionCoordinates;
 
 out vec4 frag_color;
 
 float ShadowCalculation(vec4 fragPosLightSpace, float bias)
 {
 	//Perspective division
-	vec3 projectionCoordinates = fragPosLightSpace.xyz / fragPosLightSpace.w;
+	projectionCoordinates = fragPosLightSpace.xyz / fragPosLightSpace.w;
 	
 	//Transform into a [0,1] range
 	projectionCoordinates = projectionCoordinates * 0.5 + 0.5;
 	
 	//Get the closest depth value from light's perspective (using our 0-1 range)
-	float closestDepth = texture(s_ShadowMap, projectionCoordinates.xy).r;
+	closestDepth = texture(s_ShadowMap, projectionCoordinates.xy).r;
 
 	//Get the current depth according to the light
-	float currentDepth = projectionCoordinates.z;
+	currentDepth = projectionCoordinates.z;
 
 	//Check whether there's a shadow
 	float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
@@ -68,7 +71,7 @@ void main() {
 	vec3 lightDir = normalize(-sun._lightDirection.xyz);
 	float dif = max(dot(N, lightDir), 0.0);
 	vec3 diffuse = dif * sun._lightCol.xyz;// add diffuse intensity
-
+	
 	// Specular
 	vec3 viewDir  = normalize(u_CamPos - inPos);
 	vec3 h        = normalize(lightDir + viewDir);
@@ -86,6 +89,19 @@ void main() {
 	float bias = max(0.05 * (1.0 - dot(N, lightDir)), sun._shadowBias); 
 
 	float shadow = ShadowCalculation(inFragPosLightSpace, bias);
+	
+	vec2 texelSize = 1.0 / textureSize(s_ShadowMap, 0);
+
+	for (int x = -1; x <= 1; ++x)
+	{
+		for (int y = -1; y <= 1; ++y)
+		{
+			float pcfDepth = texture(s_ShadowMap, projectionCoordinates.xy + vec2(x, y) * texelSize).r;
+			shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+		}
+	}
+
+	shadow /= 9.0;
 
 	vec3 result = (
 		(sun._ambientPow * sun._ambientCol.xyz) + // global ambient light

@@ -13,6 +13,8 @@ public:
 	//passes the previous framebuffer with the texture to apply as parameter
 	void ApplyEffect(PostEffect* buffer) override;
 
+	void DrawToScreen();
+
 	//Getters
 	float GetIntensity() const;
 

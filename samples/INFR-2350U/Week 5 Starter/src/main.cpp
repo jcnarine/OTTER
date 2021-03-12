@@ -65,9 +65,10 @@ int main() {
 		Shader::sptr shader = Shader::Create();
 		shader->LoadShaderPartFromFile("shaders/vertex_shader.glsl", GL_VERTEX_SHADER);
 		//Directional Light Shader
-		shader->LoadShaderPartFromFile("shaders/directional_blinn_phong_frag.glsl", GL_FRAGMENT_SHADER);
+		shader->LoadShaderPartFromFile("shaders/directional_shadows_blinn_phong.glsl", GL_FRAGMENT_SHADER);
 		shader->Link();
 		
+
 		//Creates our directional Light
 		DirectionalLight theSun;
 		UniformBuffer directionalLightBuffer;
@@ -89,7 +90,7 @@ int main() {
 		SepiaEffect* sepiaEffect;
 		GreyscaleEffect* greyscaleEffect;
 		ColorCorrectEffect* colorCorrectEffect;
-		
+
 		// We'll add some ImGui controls to control our shader
 		BackendHandler::imGuiCallbacks.push_back([&]() {
 			if (ImGui::CollapsingHeader("Effect controls"))
@@ -134,13 +135,7 @@ int main() {
 					}
 				}
 			}
-			if (ImGui::CollapsingHeader("Environment generation"))
-			{
-				if (ImGui::Button("Regenerate Environment", ImVec2(200.0f, 40.0f)))
-				{
-					EnvironmentGenerator::RegenerateEnvironment();
-				}
-			}
+
 			if (ImGui::CollapsingHeader("Light Level Lighting Settings"))
 			{
 				if (ImGui::DragFloat3("Light Direction/Position", glm::value_ptr(theSun._lightDirection), 0.01f, -10.0f, 10.0f)) 
@@ -176,21 +171,34 @@ int main() {
 
 		// GL states
 		glEnable(GL_DEPTH_TEST);
-		glEnable(GL_CULL_FACE);
+		//glEnable(GL_CULL_FACE);
 		glDepthFunc(GL_LEQUAL); // New 
 
 		///////////////////////////////////// Texture Loading //////////////////////////////////////////////////
 		#pragma region Texture
 
 		// Load some textures from files
-		Texture2D::sptr stone = Texture2D::LoadFromFile("images/Stone_001_Diffuse.png");
+		
+		Texture2D::sptr Fish = Texture2D::LoadFromFile("images/Fishes.png");
+		Texture2D::sptr Fish_Alt = Texture2D::LoadFromFile("images/Fishes(Alt)_color.png");
+		Texture2D::sptr Sand = Texture2D::LoadFromFile("images/Sand.png");
+		Texture2D::sptr Shark = Texture2D::LoadFromFile("images/Shark_color.png");
+		Texture2D::sptr noSpec = Texture2D::LoadFromFile("images/noSpec.png");
+		Texture2D::sptr Rocks = Texture2D::LoadFromFile("images/Rocks_color.png");
+		Texture2D::sptr Octopus = Texture2D::LoadFromFile("images/Octopus_color.png");
+		Texture2D::sptr Seaweed = Texture2D::LoadFromFile("images/Seaweed_color.jpg");
+		Texture2D::sptr Seaweed_Alt = Texture2D::LoadFromFile("images/Seaweed(Alt-1)_color.png");
+		Texture2D::sptr Seaweed_Alt2 = Texture2D::LoadFromFile("images/Seaweed(Alt-2)_color.png");
+		
+		LUT3D testCube("cubes/BrightenedCorrection.cube");
+		
+		/*Texture2D::sptr stone = Texture2D::LoadFromFile("images/Stone_001_Diffuse.png");
 		Texture2D::sptr stoneSpec = Texture2D::LoadFromFile("images/Stone_001_Specular.png");
 		Texture2D::sptr grass = Texture2D::LoadFromFile("images/grass.jpg");
 		Texture2D::sptr noSpec = Texture2D::LoadFromFile("images/grassSpec.png");
 		Texture2D::sptr box = Texture2D::LoadFromFile("images/box.bmp");
 		Texture2D::sptr boxSpec = Texture2D::LoadFromFile("images/box-reflections.bmp");
-		Texture2D::sptr simpleFlora = Texture2D::LoadFromFile("images/SimpleFlora.png");
-		LUT3D testCube("cubes/BrightenedCorrection.cube");
+		Texture2D::sptr simpleFlora = Texture2D::LoadFromFile("images/SimpleFlora.png");*/
 
 		// Load the cube map
 		//TextureCubeMap::sptr environmentMap = TextureCubeMap::LoadFromImages("images/cubemaps/skybox/sample.jpg");
@@ -225,66 +233,119 @@ int main() {
 			scene->Registry().group<RendererComponent>(entt::get_t<Transform>());
 
 		// Create a material and set some properties for it
-		ShaderMaterial::sptr stoneMat = ShaderMaterial::Create();  
-		stoneMat->Shader = shader;
-		stoneMat->Set("s_Diffuse", stone);
-		stoneMat->Set("s_Specular", stoneSpec);
-		stoneMat->Set("u_Shininess", 2.0f);
-		stoneMat->Set("u_TextureMix", 0.0f); 
+		ShaderMaterial::sptr FishMat = ShaderMaterial::Create();  
+		FishMat->Shader = shader;
+		FishMat->Set("s_Diffuse", Fish);
+		FishMat->Set("s_Specular", noSpec);
+		FishMat->Set("u_Shininess", 2.0f);
+		FishMat->Set("u_TextureMix", 0.0f); 
+		
+		ShaderMaterial::sptr FishAltMat = ShaderMaterial::Create();  
+		FishAltMat->Shader = shader;
+		FishAltMat->Set("s_Diffuse", Fish_Alt);
+		FishAltMat->Set("s_Specular", noSpec);
+		FishAltMat->Set("u_Shininess", 2.0f);
+		FishAltMat->Set("u_TextureMix", 0.0f); 
+		
+		ShaderMaterial::sptr SandMat = ShaderMaterial::Create();  
+		SandMat->Shader = shader;
+		SandMat->Set("s_Diffuse", Sand);
+		SandMat->Set("s_Specular", noSpec);
+		SandMat->Set("u_Shininess", 2.0f);
+		SandMat->Set("u_TextureMix", 0.0f); 
+		
+		ShaderMaterial::sptr SharkMat = ShaderMaterial::Create();  
+		SharkMat->Shader = shader;
+		SharkMat->Set("s_Diffuse", Shark);
+		SharkMat->Set("s_Specular", noSpec);
+		SharkMat->Set("u_Shininess", 2.0f);
+		SharkMat->Set("u_TextureMix", 0.0f); 
+		
+		ShaderMaterial::sptr RocksMat = ShaderMaterial::Create();  
+		RocksMat->Shader = shader;
+		RocksMat->Set("s_Diffuse", Rocks);
+		RocksMat->Set("s_Specular", noSpec);
+		RocksMat->Set("u_Shininess", 2.0f);
+		RocksMat->Set("u_TextureMix", 0.0f); 
+		
+		ShaderMaterial::sptr OctopusMat = ShaderMaterial::Create();  
+		OctopusMat->Shader = shader;
+		OctopusMat->Set("s_Diffuse", Octopus);
+		OctopusMat->Set("s_Specular", noSpec);
+		OctopusMat->Set("u_Shininess", 2.0f);
+		OctopusMat->Set("u_TextureMix", 0.0f); 
+		
+		ShaderMaterial::sptr SeaweedMat = ShaderMaterial::Create();  
+		SeaweedMat->Shader = shader;
+		SeaweedMat->Set("s_Diffuse", Seaweed);
+		SeaweedMat->Set("s_Specular", noSpec);
+		SeaweedMat->Set("u_Shininess", 2.0f);
+		SeaweedMat->Set("u_TextureMix", 0.0f); 
+		
+		ShaderMaterial::sptr SeaweedAltMat = ShaderMaterial::Create();  
+		SeaweedAltMat->Shader = shader;
+		SeaweedAltMat->Set("s_Diffuse", Seaweed_Alt);
+		SeaweedAltMat->Set("s_Specular", noSpec);
+		SeaweedAltMat->Set("u_Shininess", 2.0f);
+		SeaweedAltMat->Set("u_TextureMix", 0.0f); 
+		
+		ShaderMaterial::sptr SeaweedAlt2Mat = ShaderMaterial::Create();  
+		SeaweedAlt2Mat->Shader = shader;
+		SeaweedAlt2Mat->Set("s_Diffuse", Seaweed_Alt2);
+		SeaweedAlt2Mat->Set("s_Specular", noSpec);
+		SeaweedAlt2Mat->Set("u_Shininess", 2.0f);
+		SeaweedAlt2Mat->Set("u_TextureMix", 0.0f); 
 
-		ShaderMaterial::sptr grassMat = ShaderMaterial::Create();
-		grassMat->Shader = shader;
-		grassMat->Set("s_Diffuse", grass);
-		grassMat->Set("s_Specular", noSpec);
-		grassMat->Set("u_Shininess", 2.0f);
-		grassMat->Set("u_TextureMix", 0.0f);
 
-		ShaderMaterial::sptr boxMat = ShaderMaterial::Create();
-		boxMat->Shader = shader;
-		boxMat->Set("s_Diffuse", box);
-		boxMat->Set("s_Specular", boxSpec);
-		boxMat->Set("u_Shininess", 8.0f);
-		boxMat->Set("u_TextureMix", 0.0f);
-
-		ShaderMaterial::sptr simpleFloraMat = ShaderMaterial::Create();
-		simpleFloraMat->Shader = shader;
-		simpleFloraMat->Set("s_Diffuse", simpleFlora);
-		simpleFloraMat->Set("s_Specular", noSpec);
-		simpleFloraMat->Set("u_Shininess", 8.0f);
-		simpleFloraMat->Set("u_TextureMix", 0.0f);
-
-		GameObject obj1 = scene->CreateEntity("Ground"); 
+		GameObject obj2 = scene->CreateEntity("Fish");
 		{
-			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/plane.obj");
-			obj1.emplace<RendererComponent>().SetMesh(vao).SetMaterial(grassMat);
-		}
-
-		GameObject obj2 = scene->CreateEntity("monkey_quads");
-		{
-			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/monkey_quads.obj");
-			obj2.emplace<RendererComponent>().SetMesh(vao).SetMaterial(stoneMat);
-			obj2.get<Transform>().SetLocalPosition(0.0f, 0.0f, 2.0f);
-			obj2.get<Transform>().SetLocalRotation(0.0f, 0.0f, -90.0f);
+			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/Fishes.obj");
+			obj2.emplace<RendererComponent>().SetMesh(vao).SetMaterial(FishMat);
+			obj2.get<Transform>().SetLocalPosition(0.0f, 0.0f, 0.0f);
+			obj2.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(obj2);
 		}
+		GameObject obj3 = scene->CreateEntity("Fish_Alt");
+		{
+			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/Fishes(Alt).obj");
+			obj3.emplace<RendererComponent>().SetMesh(vao).SetMaterial(FishAltMat);
+			obj3.get<Transform>().SetLocalPosition(0.0f, 0.0f, 0.0f);
+			obj3.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(obj3);
+		}
+		GameObject obj4 = scene->CreateEntity("Sand");
+		{
+			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/plane.obj");
+			obj4.get<Transform>().SetLocalScale(5.0f, 5.0f, 5.0f);
+			obj4.emplace<RendererComponent>().SetMesh(vao).SetMaterial(SandMat);
+		}
 
-		std::vector<glm::vec2> allAvoidAreasFrom = { glm::vec2(-4.0f, -4.0f) };
-		std::vector<glm::vec2> allAvoidAreasTo = { glm::vec2(4.0f, 4.0f) };
+		GameObject obj6 = scene->CreateEntity("Rocks");
+		{
+			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/Rocks.obj");
+			obj6.emplace<RendererComponent>().SetMesh(vao).SetMaterial(RocksMat);
+			obj6.get<Transform>().SetLocalPosition(0.0f, 0.0f, 0.0f);
+			obj6.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(obj6);
+		}
 
-		std::vector<glm::vec2> rockAvoidAreasFrom = { glm::vec2(-3.0f, -3.0f), glm::vec2(-19.0f, -19.0f), glm::vec2(5.0f, -19.0f),
-														glm::vec2(-19.0f, 5.0f), glm::vec2(-19.0f, -19.0f) };
-		std::vector<glm::vec2> rockAvoidAreasTo = { glm::vec2(3.0f, 3.0f), glm::vec2(19.0f, -5.0f), glm::vec2(19.0f, 19.0f),
-														glm::vec2(19.0f, 19.0f), glm::vec2(-5.0f, 19.0f) };
-		glm::vec2 spawnFromHere = glm::vec2(-19.0f, -19.0f);
-		glm::vec2 spawnToHere = glm::vec2(19.0f, 19.0f);
+		GameObject obj9 = scene->CreateEntity("Seaweed_Alt");
+		{
+			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/Seaweed(Alt).obj");
+			obj9.emplace<RendererComponent>().SetMesh(vao).SetMaterial(SeaweedAltMat);
+			obj9.get<Transform>().SetLocalPosition(0.0f, 0.0f, 0.0f);
+			obj9.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(obj9);
+		}
 
-		EnvironmentGenerator::AddObjectToGeneration("models/simplePine.obj", simpleFloraMat, 40,
-			spawnFromHere, spawnToHere, allAvoidAreasFrom, allAvoidAreasTo);
-		EnvironmentGenerator::AddObjectToGeneration("models/simpleTree.obj", simpleFloraMat, 40,
-			spawnFromHere, spawnToHere, allAvoidAreasFrom, allAvoidAreasTo);
-		EnvironmentGenerator::AddObjectToGeneration("models/simpleRock.obj", simpleFloraMat, 24,
-			spawnFromHere, spawnToHere, rockAvoidAreasFrom, rockAvoidAreasTo);
-		EnvironmentGenerator::GenerateEnvironment();
+		GameObject obj10 = scene->CreateEntity("Seaweed_Alt2");
+		{
+			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/Seaweed(Alt-2).obj");
+			obj10.emplace<RendererComponent>().SetMesh(vao).SetMaterial(SeaweedAlt2Mat);
+			obj10.get<Transform>().SetLocalPosition(0.0f, 0.0f, 0.0f);
+			obj10.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(obj10);
+		}
 
 		// Create an object to be our camera
 		GameObject cameraObject = scene->CreateEntity("Camera");
@@ -304,8 +365,8 @@ int main() {
 		int width, height;
 		glfwGetWindowSize(BackendHandler::window, &width, &height);
 
-		int shadowWidth = 4096;
-		int shadowHeight = 4096;
+		int shadowWidth = 8192;
+		int shadowHeight = 8192;
 
 		GameObject shadowBufferObject = scene->CreateEntity("Shadow Buffer");
 		{
@@ -511,12 +572,10 @@ int main() {
 
 			shadowBuffer->Unbind();
 
-
 			glfwGetWindowSize(BackendHandler::window, &width, &height);
 
 			glViewport(0, 0, width, height);
 			basicEffect->BindBuffer(0);
-
 
 			// Iterate over the render group components and draw them
 			renderGroup.each( [&](entt::entity e, RendererComponent& renderer, Transform& transform) {
