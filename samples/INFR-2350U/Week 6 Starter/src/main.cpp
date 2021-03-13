@@ -39,6 +39,11 @@ int main() {
 	int selectedVao = 0; // select cube by default
 	std::vector<GameObject> controllables;
 
+	bool drawGBuffer = false;
+	bool drawIllumBuffer = false;
+
+
+
 	BackendHandler::InitAll();
 
 	// Let OpenGL know that we want debug output, and route it to our handler function
@@ -51,6 +56,7 @@ int main() {
 	// Push another scope so most memory should be freed *before* we exit the app
 	{
 		#pragma region Shader and ImGui
+
 		Shader::sptr passthroughShader = Shader::Create();
 		passthroughShader->LoadShaderPartFromFile("shaders/passthrough_vert.glsl", GL_VERTEX_SHADER);
 		passthroughShader->LoadShaderPartFromFile("shaders/passthrough_frag.glsl", GL_FRAGMENT_SHADER);
@@ -60,28 +66,27 @@ int main() {
 		simpleDepthShader->LoadShaderPartFromFile("shaders/simple_depth_vert.glsl", GL_VERTEX_SHADER);
 		simpleDepthShader->LoadShaderPartFromFile("shaders/simple_depth_frag.glsl", GL_FRAGMENT_SHADER);
 		simpleDepthShader->Link();
+		
+		Shader::sptr gBufferShader = Shader::Create();
+		gBufferShader->LoadShaderPartFromFile("shaders/vertex_shader.glsl", GL_VERTEX_SHADER);
+		gBufferShader->LoadShaderPartFromFile("shaders/gBuffer_pass_frag.glsl", GL_FRAGMENT_SHADER);
+		gBufferShader->Link();
+
 
 		// Load our shaders
 		Shader::sptr shader = Shader::Create();
 		shader->LoadShaderPartFromFile("shaders/vertex_shader.glsl", GL_VERTEX_SHADER);
+
 		//Directional Light Shader
 		shader->LoadShaderPartFromFile("shaders/directional_blinn_phong_frag.glsl", GL_FRAGMENT_SHADER);
 		shader->Link();
 
-		//Creates our directional Light
-		DirectionalLight theSun;
-		UniformBuffer directionalLightBuffer;
-
-		//Allocates enough memory for one directional light (we can change this easily, but we only need 1 directional light)
-		directionalLightBuffer.AllocateMemory(sizeof(DirectionalLight));
-		//Casts our sun as "data" and sends it to the shader
-		directionalLightBuffer.SendData(reinterpret_cast<void*>(&theSun), sizeof(DirectionalLight));
-
-		directionalLightBuffer.Bind(0);
-
 		//Basic effect for drawing to
 		PostEffect* basicEffect;
 		Framebuffer* shadowBuffer;
+		GBuffer* gBuffer;
+		IlluminationBuffer* illuminationBuffer;
+
 
 		//Post Processing Effects
 		int activeEffect = 0;
@@ -143,7 +148,7 @@ int main() {
 			}
 			if (ImGui::CollapsingHeader("Light Level Lighting Settings"))
 			{
-				if (ImGui::DragFloat3("Light Direction/Position", glm::value_ptr(theSun._lightDirection), 0.01f, -10.0f, 10.0f)) 
+				if (ImGui::DragFloat3("Light Direction/Position", glm::value_ptr(illuminationBuffer->GetSunRef()._lightDirection), 0.01f, -10.0f, 10.0f)) 
 				{
 				}
 			}
@@ -212,7 +217,7 @@ int main() {
 		GameScene::RegisterComponentType<Camera>();
 
 		// Create a scene, and set it to be the active scene in the application
-		GameScene::sptr scene = GameScene::Create("test");
+		GameScene::sptr scene = GameScene::Create("Tutorial 05");
 		Application::Instance().ActiveScene = scene;
 
 		// We can create a group ahead of time to make iterating on the group faster
@@ -221,28 +226,28 @@ int main() {
 
 		// Create a material and set some properties for it
 		ShaderMaterial::sptr stoneMat = ShaderMaterial::Create();  
-		stoneMat->Shader = shader;
+		stoneMat->Shader = gBufferShader;
 		stoneMat->Set("s_Diffuse", stone);
 		stoneMat->Set("s_Specular", stoneSpec);
 		stoneMat->Set("u_Shininess", 2.0f);
 		stoneMat->Set("u_TextureMix", 0.0f); 
 
 		ShaderMaterial::sptr grassMat = ShaderMaterial::Create();
-		grassMat->Shader = shader;
+		grassMat->Shader = gBufferShader;
 		grassMat->Set("s_Diffuse", grass);
 		grassMat->Set("s_Specular", noSpec);
 		grassMat->Set("u_Shininess", 2.0f);
 		grassMat->Set("u_TextureMix", 0.0f);
 
 		ShaderMaterial::sptr boxMat = ShaderMaterial::Create();
-		boxMat->Shader = shader;
+		boxMat->Shader = gBufferShader;
 		boxMat->Set("s_Diffuse", box);
 		boxMat->Set("s_Specular", boxSpec);
 		boxMat->Set("u_Shininess", 8.0f);
 		boxMat->Set("u_TextureMix", 0.0f);
 
 		ShaderMaterial::sptr simpleFloraMat = ShaderMaterial::Create();
-		simpleFloraMat->Shader = shader;
+		simpleFloraMat->Shader = gBufferShader;
 		simpleFloraMat->Set("s_Diffuse", simpleFlora);
 		simpleFloraMat->Set("s_Specular", noSpec);
 		simpleFloraMat->Set("u_Shininess", 8.0f);
@@ -299,6 +304,18 @@ int main() {
 		int width, height;
 		glfwGetWindowSize(BackendHandler::window, &width, &height);
 
+		GameObject gBufferObject = scene->CreateEntity("G Buffer");
+		{
+			gBuffer= &gBufferObject.emplace<GBuffer>();
+			gBuffer->Init(width, height);
+		}
+		
+		GameObject illuminationbufferObject = scene->CreateEntity("Illumination Buffer");
+		{
+			illuminationBuffer= &illuminationbufferObject.emplace<IlluminationBuffer>();
+			illuminationBuffer->Init(width, height);
+		}
+
 		int shadowWidth = 4096;
 		int shadowHeight = 4096;
 
@@ -341,7 +358,7 @@ int main() {
 		//////////////////////////////////////////////////////////////////////////////////////////
 
 		/////////////////////////////////// SKYBOX ///////////////////////////////////////////////
-		{
+		
 			// Load our shaders
 			Shader::sptr skybox = std::make_shared<Shader>();
 			skybox->LoadShaderPartFromFile("shaders/skybox-shader.vert.glsl", GL_VERTEX_SHADER);
@@ -361,10 +378,9 @@ int main() {
 			
 			GameObject skyboxObj = scene->CreateEntity("skybox");  
 			skyboxObj.get<Transform>().SetLocalPosition(0.0f, 0.0f, 0.0f);
-			skyboxObj.get_or_emplace<RendererComponent>().SetMesh(meshVao).SetMaterial(skyboxMat).SetCastShadow(false);
-		}
+			//skyboxObj.get_or_emplace<RendererComponent>().SetMesh(meshVao).SetMaterial(skyboxMat).SetCastShadow(false);
+		
 		////////////////////////////////////////////////////////////////////////////////////////
-
 
 		// We'll use a vector to store all our key press events for now (this should probably be a behaviour eventually)
 		std::vector<KeyPressWatcher> keyToggles;
@@ -373,7 +389,10 @@ int main() {
 			// how this is implemented. Note that the ampersand here is capturing the variables within
 			// the scope. If you wanted to do some method on the class, your best bet would be to give it a method and
 			// use std::bind
+
 			keyToggles.emplace_back(GLFW_KEY_T, [&]() { cameraObject.get<Camera>().ToggleOrtho(); });
+			keyToggles.emplace_back(GLFW_KEY_F1, [&]() {drawGBuffer= !drawGBuffer;});
+			keyToggles.emplace_back(GLFW_KEY_F2, [&]() {drawIllumBuffer = !drawIllumBuffer;});
 
 			controllables.push_back(obj2);
 
@@ -446,7 +465,10 @@ int main() {
 			{
 				effects[i]->Clear();
 			}
+
 			shadowBuffer->Clear();
+			gBuffer->Clear();
+			illuminationBuffer->Clear();
 
 
 			glClearColor(1.0f, 1.0f, 1.0f, 0.3f);
@@ -467,8 +489,12 @@ int main() {
 
 			//Set up light space matrix
 			glm::mat4 lightProjectionMatrix = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, -30.0f, 30.0f);
-			glm::mat4 lightViewMatrix = glm::lookAt(glm::vec3(-theSun._lightDirection), glm::vec3(), glm::vec3(0.0f, 0.0f, 1.0f));
+			glm::mat4 lightViewMatrix = glm::lookAt(glm::vec3(-illuminationBuffer->GetSunRef()._lightDirection), glm::vec3(), glm::vec3(0.0f, 0.0f, 1.0f));
 			glm::mat4 lightSpaceViewProj = lightProjectionMatrix * lightViewMatrix;
+
+			illuminationBuffer->SetLightSpaceViewProj(lightSpaceViewProj);
+			glm::vec3 camPos = glm::inverse(view) * glm::vec4(0,0,0,1);
+			illuminationBuffer->SetCamPos(camPos);
 
 			// Sort the renderers by shader and material, we will go for a minimizing context switches approach here,
 			// but you could for instance sort front to back to optimize for fill rate if you have intensive fragment shaders
@@ -508,7 +534,9 @@ int main() {
 			glfwGetWindowSize(BackendHandler::window, &width, &height);
 
 			glViewport(0, 0, width, height);
-			basicEffect->BindBuffer(0);
+
+			gBuffer->Bind();
+
 			// Iterate over the render group components and draw them
 			renderGroup.each([&](entt::entity e, RendererComponent& renderer, Transform& transform) {
 				// If the shader has changed, set up it's uniforms
@@ -530,13 +558,39 @@ int main() {
 				
 			});
 
-			shadowBuffer->UnbindTexture(30);
-			basicEffect->UnbindBuffer();
 
-			effects[activeEffect]->ApplyEffect(basicEffect);
-			
+
+			gBuffer->Unbind();
+
+			illuminationBuffer->BindBuffer(0);	
+
+			skybox->Bind();
+
+			BackendHandler::SetupShaderForFrame(skybox,view,projection);
+			skyboxMat->Apply();
+			BackendHandler::RenderVAO(skybox, meshVao, viewProjection, skyboxObj.get<Transform>(), lightSpaceViewProj);
+			skybox->UnBind();
+
+
+			illuminationBuffer->UnbindBuffer();	
+
+			shadowBuffer->BindDepthAsTexture(30);
+
+			illuminationBuffer->ApplyEffect(gBuffer);
+
+			shadowBuffer->UnbindTexture(30);
+
+			if (drawGBuffer){
+			gBuffer->DrawBuffersToScreen();
+
+			}else if(drawIllumBuffer){
+			illuminationBuffer->DrawIllumBuffer();
+
+			}else{
+			effects[activeEffect]->ApplyEffect(illuminationBuffer);
 			effects[activeEffect]->DrawToScreen();
-			
+			}
+
 			// Draw our ImGui content
 			BackendHandler::RenderImGui();
 
@@ -544,7 +598,6 @@ int main() {
 			glfwSwapBuffers(BackendHandler::window);
 			time.LastFrame = time.CurrentFrame;
 		}
-		directionalLightBuffer.Unbind(0);
 
 		// Nullify scene so that we can release references
 		Application::Instance().ActiveScene = nullptr;
