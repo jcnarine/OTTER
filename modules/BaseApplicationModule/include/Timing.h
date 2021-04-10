@@ -8,6 +8,7 @@ public:
 		return instance;
 	}
 
+	float totalTime = 0.0f;
 	double CurrentFrame;
 	double LastFrame;
 	float  DeltaTime;
