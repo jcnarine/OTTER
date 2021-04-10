@@ -41,7 +41,7 @@ public:
 	@param length    The length of the message
 	@param message   The human readable message from OpenGL
 	@param userParam The pointer we set with glDebugMessageCallback (should be the game pointer)
-	*/
+*/
 	static void GlDebugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
 
 	//Initialize everything

@@ -191,14 +191,6 @@ int main() {
 		Texture2D::sptr Seaweed_Alt2 = Texture2D::LoadFromFile("images/Seaweed(Alt-2)_color.png");
 		
 		LUT3D testCube("cubes/BrightenedCorrection.cube");
-		
-		/*Texture2D::sptr stone = Texture2D::LoadFromFile("images/Stone_001_Diffuse.png");
-		Texture2D::sptr stoneSpec = Texture2D::LoadFromFile("images/Stone_001_Specular.png");
-		Texture2D::sptr grass = Texture2D::LoadFromFile("images/grass.jpg");
-		Texture2D::sptr noSpec = Texture2D::LoadFromFile("images/grassSpec.png");
-		Texture2D::sptr box = Texture2D::LoadFromFile("images/box.bmp");
-		Texture2D::sptr boxSpec = Texture2D::LoadFromFile("images/box-reflections.bmp");
-		Texture2D::sptr simpleFlora = Texture2D::LoadFromFile("images/SimpleFlora.png");*/
 
 		// Load the cube map
 		//TextureCubeMap::sptr environmentMap = TextureCubeMap::LoadFromImages("images/cubemaps/skybox/sample.jpg");
