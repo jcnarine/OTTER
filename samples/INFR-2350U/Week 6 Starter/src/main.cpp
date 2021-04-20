@@ -42,11 +42,7 @@ int main() {
 	bool drawGBuffer = false;
 	bool drawIllumBuffer = false;
 
-<<<<<<< HEAD
 
-
-=======
->>>>>>> master
 	BackendHandler::InitAll();
 
 	// Let OpenGL know that we want debug output, and route it to our handler function
@@ -93,14 +89,9 @@ int main() {
 		//Basic effect for drawing to
 		PostEffect* basicEffect;
 		Framebuffer* shadowBuffer;
-<<<<<<< HEAD
-		GBuffer* gBuffer;
-		IlluminationBuffer* illuminationBuffer;
 
-=======
-		IlluminationBuffer* illuminationBuffer;
 		GBuffer* gBuffer;
->>>>>>> master
+		IlluminationBuffer* illuminationBuffer;
 
 		//Post Processing Effects
 		int activeEffect = 0;
@@ -320,7 +311,7 @@ int main() {
 
 		GameObject gBufferObject = scene->CreateEntity("G Buffer");
 		{
-<<<<<<< HEAD
+
 			gBuffer= &gBufferObject.emplace<GBuffer>();
 			gBuffer->Init(width, height);
 		}
@@ -328,7 +319,7 @@ int main() {
 		GameObject illuminationbufferObject = scene->CreateEntity("Illumination Buffer");
 		{
 			illuminationBuffer= &illuminationbufferObject.emplace<IlluminationBuffer>();
-=======
+
 			gBuffer = &gBufferObject.emplace<GBuffer>();
 			gBuffer->Init(width, height);
 		}
@@ -336,7 +327,7 @@ int main() {
 		GameObject illuminationBufferObject = scene->CreateEntity("Illumination Buffer");
 		{
 			illuminationBuffer = &illuminationBufferObject.emplace<IlluminationBuffer>();
->>>>>>> master
+
 			illuminationBuffer->Init(width, height);
 		}
 
@@ -382,10 +373,7 @@ int main() {
 		//////////////////////////////////////////////////////////////////////////////////////////
 
 		/////////////////////////////////// SKYBOX ///////////////////////////////////////////////
-<<<<<<< HEAD
-		
-=======
->>>>>>> master
+
 			// Load our shaders
 			Shader::sptr skybox = std::make_shared<Shader>();
 			skybox->LoadShaderPartFromFile("shaders/skybox-shader.vert.glsl", GL_VERTEX_SHADER);
@@ -405,12 +393,7 @@ int main() {
 			
 			GameObject skyboxObj = scene->CreateEntity("skybox");  
 			skyboxObj.get<Transform>().SetLocalPosition(0.0f, 0.0f, 0.0f);
-<<<<<<< HEAD
-			//skyboxObj.get_or_emplace<RendererComponent>().SetMesh(meshVao).SetMaterial(skyboxMat).SetCastShadow(false);
-		
-=======
-			//skyboxObj.get_or_emplace<RendererComponent>().SetMesh(meshVao).SetMaterial(skyboxMat).SetCastShadow(false).SetRenderOnDeferred(false);
->>>>>>> master
+
 		////////////////////////////////////////////////////////////////////////////////////////
 
 		// We'll use a vector to store all our key press events for now (this should probably be a behaviour eventually)
@@ -502,17 +485,10 @@ int main() {
 			{
 				effects[i]->Clear();
 			}
-<<<<<<< HEAD
 
 			shadowBuffer->Clear();
 			gBuffer->Clear();
 			illuminationBuffer->Clear();
-=======
-			illuminationBuffer->Clear();
-			shadowBuffer->Clear();
-			gBuffer->Clear();
->>>>>>> master
-
 
 			glClearColor(1.0f, 1.0f, 1.0f, 0.3f);
 			glEnable(GL_DEPTH_TEST);
@@ -535,14 +511,10 @@ int main() {
 			glm::mat4 lightViewMatrix = glm::lookAt(glm::vec3(-illuminationBuffer->GetSunRef()._lightDirection), glm::vec3(), glm::vec3(0.0f, 0.0f, 1.0f));
 			glm::mat4 lightSpaceViewProj = lightProjectionMatrix * lightViewMatrix;
 
-<<<<<<< HEAD
-			illuminationBuffer->SetLightSpaceViewProj(lightSpaceViewProj);
-			glm::vec3 camPos = glm::inverse(view) * glm::vec4(0,0,0,1);
-=======
 			//Set lightspaceviewproj
 			illuminationBuffer->SetLightSpaceViewProj(lightSpaceViewProj);
 			glm::vec3 camPos = glm::inverse(view) * glm::vec4(0, 0, 0, 1);
->>>>>>> master
+
 			illuminationBuffer->SetCamPos(camPos);
 
 			// Sort the renderers by shader and material, we will go for a minimizing context switches approach here,
@@ -583,13 +555,11 @@ int main() {
 			glfwGetWindowSize(BackendHandler::window, &width, &height);
 
 			glViewport(0, 0, width, height);
-<<<<<<< HEAD
+			gBuffer->Bind();
+
 
 			gBuffer->Bind();
 
-=======
-			gBuffer->Bind();
->>>>>>> master
 			// Iterate over the render group components and draw them
 			renderGroup.each([&](entt::entity e, RendererComponent& renderer, Transform& transform) {
 				// If the shader has changed, set up it's uniforms
@@ -611,9 +581,6 @@ int main() {
 				}
 			});
 
-<<<<<<< HEAD
-
-
 			gBuffer->Unbind();
 
 			illuminationBuffer->BindBuffer(0);	
@@ -621,7 +588,7 @@ int main() {
 			skybox->Bind();
 
 			BackendHandler::SetupShaderForFrame(skybox,view,projection);
-=======
+
 			gBuffer->Unbind();
 
 			illuminationBuffer->BindBuffer(0);
@@ -629,22 +596,18 @@ int main() {
 			//Render skybox
 			skybox->Bind();
 			BackendHandler::SetupShaderForFrame(skybox, view, projection);
->>>>>>> master
+
 			skyboxMat->Apply();
 			BackendHandler::RenderVAO(skybox, meshVao, viewProjection, skyboxObj.get<Transform>(), lightSpaceViewProj);
 			skybox->UnBind();
 
-<<<<<<< HEAD
-
 			illuminationBuffer->UnbindBuffer();	
-=======
+
 			illuminationBuffer->UnbindBuffer();
->>>>>>> master
 
 			shadowBuffer->BindDepthAsTexture(30);
 
 			illuminationBuffer->ApplyEffect(gBuffer);
-<<<<<<< HEAD
 
 			shadowBuffer->UnbindTexture(30);
 
@@ -659,8 +622,7 @@ int main() {
 			effects[activeEffect]->DrawToScreen();
 			}
 
-=======
-			
+
 			shadowBuffer->UnbindTexture(30);
 
 			if (drawGBuffer)
@@ -679,8 +641,7 @@ int main() {
 			//effects[activeEffect]->ApplyEffect(basicEffect);
 			
 			//effects[activeEffect]->DrawToScreen();
-			
->>>>>>> master
+
 			// Draw our ImGui content
 			BackendHandler::RenderImGui();
 
