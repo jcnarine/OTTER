@@ -35,11 +35,15 @@ layout (std140, binding = 0) uniform u_Lights
 uniform sampler2D s_Diffuse;
 uniform sampler2D s_Diffuse2;
 uniform sampler2D s_Specular;
+<<<<<<< HEAD
 uniform sampler2D s_NormalMap;
+=======
+>>>>>>> master
 
 uniform float u_TextureMix;
 uniform vec3  u_CamPos;
 
+<<<<<<< HEAD
 layout(binding = 29) uniform sampler2D s_DepthBuffer;
 
 uniform float u_waterTransparency;
@@ -51,23 +55,47 @@ uniform float u_WindowHeight;
 uniform vec4 u_DeepColor;
 uniform vec4 u_MidColor;
 uniform vec4 u_ShoreColor;
+=======
+layout (binding = 29) uniform sampler2D s_DepthBuffer;
+
+uniform float u_waterTransparency;
+
+uniform float u_WindowWidth;
+uniform float u_WindowHeight;
+
+uniform vec4 u_deepestColor;
+uniform vec4 u_midColor;
+uniform vec4 u_shoreColor;
+>>>>>>> master
 
 uniform float u_shoreCutoff;
 uniform float u_midCutoff;
 
 out vec4 frag_color;
 
+<<<<<<< HEAD
 float linearize_depth(float d, float zNear, float zFar){
+=======
+float linearize_depth(float d, float zNear, float zFar)
+{
+>>>>>>> master
 	float z_n = 2.0 * d - 1.0;
 	return 2.0 * zNear * zFar / (zFar + zNear - z_n * (zFar - zNear));
 }
 
+<<<<<<< HEAD
 //https://learnopengl.com/Advanced-Lighting/Advanced-Lighting
 
 void main() {
 
 	vec2 screenUV = vec2(gl_FragCoord.x / u_WindowWidth, gl_FragCoord.y / u_WindowHeight );
 
+=======
+// https://learnopengl.com/Advanced-Lighting/Advanced-Lighting
+void main() {
+	//Read in our depth buffer
+	vec2 screenUV = vec2(gl_FragCoord.x / u_WindowWidth, gl_FragCoord.y / u_WindowHeight);
+>>>>>>> master
 	float expectedDepth = linearize_depth(texture(s_DepthBuffer, screenUV).x, 0.01, 1000.0);
 
 	float actualDepth = linearize_depth(gl_FragCoord.z, 0.01, 1000.0);
@@ -81,6 +109,7 @@ void main() {
 	if (depthDiff <= u_shoreCutoff)
 	{
 		shoreColorMod = 1.0;
+<<<<<<< HEAD
 
 	}else if (depthDiff<= u_midCutoff){
 
@@ -93,6 +122,18 @@ void main() {
 	// Normals 
 	vec3 inNormal = (normalize(texture(s_NormalMap, inUV).rgb) * 2.0) - 1.0;
 
+=======
+	}
+	else if (depthDiff <= u_midCutoff)
+	{
+		midColorMod = 1.0;
+	}
+	else
+	{
+		deepColorMod = 1.0;
+	}
+
+>>>>>>> master
 	// Diffuse
 	vec3 N = normalize(inNormal);
 	vec3 lightDir = normalize(-sun._lightDirection.xyz);
@@ -116,6 +157,7 @@ void main() {
 	vec3 result = (
 		(sun._ambientPow * sun._ambientCol.xyz) + // global ambient light
 		(diffuse + specular) // light factors from our single light
+<<<<<<< HEAD
 		) * inColor * mix(textureColor, u_ShoreColor, shoreColorMod).rgb // Object color
 		*(shoreColorMod 
 		+ (u_MidColor.rgb * midColorMod)
@@ -126,4 +168,16 @@ void main() {
 			+ (u_MidColor.a * midColorMod)
 			+ (u_DeepColor.a * deepColorMod)));
 	
+=======
+		) * inColor * mix(textureColor, u_shoreColor, shoreColorMod).rgb
+		* (shoreColorMod
+		+ (u_midColor.rgb * midColorMod)
+		+ (u_deepestColor.rgb * deepColorMod)); // Object color
+
+	//frag_color = vec4(depthDiff, depthDiff, depthDiff, 1.0);
+	frag_color = vec4(result, u_waterTransparency
+		* ((u_shoreColor.a * shoreColorMod)
+		+ (u_midColor.a * midColorMod)
+		+ (u_deepestColor.a * deepColorMod)));
+>>>>>>> master
 }

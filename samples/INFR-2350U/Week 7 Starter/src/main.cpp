@@ -67,6 +67,36 @@ int main() {
 		//Directional Light Shader
 		shader->LoadShaderPartFromFile("shaders/directional_blinn_phong_frag.glsl", GL_FRAGMENT_SHADER);
 		shader->Link();
+
+		// Load our shaders
+		Shader::sptr groundShader = Shader::Create();
+		groundShader->LoadShaderPartFromFile("shaders/height_displacement_vert.glsl", GL_VERTEX_SHADER);
+		//Directional Light Shader
+		groundShader->LoadShaderPartFromFile("shaders/directional_blinn_phong_frag.glsl", GL_FRAGMENT_SHADER);
+		groundShader->Link();
+
+		// Load our shaders
+		Shader::sptr waterShader = Shader::Create();
+		waterShader->LoadShaderPartFromFile("shaders/water_vert.glsl", GL_VERTEX_SHADER);
+		//Directional Light Shader
+		waterShader->LoadShaderPartFromFile("shaders/water_frag.glsl", GL_FRAGMENT_SHADER);
+		waterShader->Link();
+
+		float displacementIntensity = 11.0f;
+		ShaderMaterial::sptr grassMat = ShaderMaterial::Create();
+		grassMat->Shader = groundShader;
+
+		float waterTransparency = 0.8f;
+
+		glm::vec4 deepColor = glm::vec4(0.0, 0.05, 0.65, 1.0);
+		glm::vec4 midColor = glm::vec4(0.62, 0.65, 1.0, 1.0);
+		glm::vec4 shoreColor = glm::vec4(1.0, 1.0, 1.0, 1.0);
+		float shoreCutoff = 0.03;
+		float midCutoff = 0.3;
+
+		ShaderMaterial::sptr waterMat = ShaderMaterial::Create();
+		waterMat->Shader = waterShader;
+		waterMat->RenderLayer = 10;
 		
 		// Load our shaders
 		Shader::sptr groundShader = Shader::Create();
@@ -206,6 +236,44 @@ int main() {
 					directionalLightBuffer.SendData(reinterpret_cast<void*>(&theSun), sizeof(DirectionalLight));
 				}
 			}
+<<<<<<< HEAD
+=======
+			if(ImGui::CollapsingHeader("World Showcase Settings"))
+			{
+				if (ImGui::DragFloat("Height Intensity", &displacementIntensity, 1.f, 1.0f, 100.0f))
+				{
+					grassMat->Set("u_HeightIntensity", displacementIntensity);
+				}
+
+				if (ImGui::DragFloat("Water Transparency", &waterTransparency, 0.01f, 0.0f, 1.0f))
+				{
+					waterMat->Set("u_waterTransparency", waterTransparency);
+				}
+
+				if (ImGui::ColorEdit4("Deep Color", glm::value_ptr(deepColor)))
+				{
+					waterMat->Set("u_deepestColor", deepColor);
+				}
+				if (ImGui::ColorEdit4("Mid Color", glm::value_ptr(midColor)))
+				{
+					waterMat->Set("u_midColor", midColor);
+				}
+				if (ImGui::ColorEdit4("Shore Color", glm::value_ptr(shoreColor)))
+				{
+					waterMat->Set("u_shoreColor", shoreColor);
+				}
+
+				if (ImGui::SliderFloat("Shore Cutoff", &shoreCutoff, 0.0f, midCutoff))
+				{
+					waterMat->Set("u_shoreCutoff", shoreCutoff);
+				}
+				if (ImGui::SliderFloat("Mid Cutoff", &midCutoff, shoreCutoff, 1.0f))
+				{
+					waterMat->Set("u_midCutoff", midCutoff);
+				}
+			}
+
+>>>>>>> master
 			auto name = controllables[selectedVao].get<GameObjectTag>().Name;
 			ImGui::Text(name.c_str());
 			auto behaviour = BehaviourBinding::Get<SimpleMoveBehaviour>(controllables[selectedVao]);
@@ -242,12 +310,18 @@ int main() {
 		// Load some textures from files
 		Texture2D::sptr stone = Texture2D::LoadFromFile("images/Stone_001_Diffuse.png");
 		Texture2D::sptr stoneSpec = Texture2D::LoadFromFile("images/Stone_001_Specular.png");
+<<<<<<< HEAD
 		Texture2D::sptr snow = Texture2D::LoadFromFile("images/snow.jpg");
 		Texture2D::sptr grass = Texture2D::LoadFromFile("images/dirt.jpg");
 		Texture2D::sptr anothergrass = Texture2D::LoadFromFile("images/grass.jpg");
 		Texture2D::sptr heightMap = Texture2D::LoadFromFile("images/groundHeightMap.png");
 		Texture2D::sptr water = Texture2D::LoadFromFile("images/water.png");
 		Texture2D::sptr waterNormal = Texture2D::LoadFromFile("images/water_normal2.png");
+=======
+		Texture2D::sptr grass = Texture2D::LoadFromFile("images/dirt.jpg");
+		Texture2D::sptr heightMap = Texture2D::LoadFromFile("images/groundHeightMap.png");
+		Texture2D::sptr water = Texture2D::LoadFromFile("images/Water.png");
+>>>>>>> master
 		Texture2D::sptr noSpec = Texture2D::LoadFromFile("images/grassSpec.png");
 		Texture2D::sptr box = Texture2D::LoadFromFile("images/box.bmp");
 		Texture2D::sptr boxSpec = Texture2D::LoadFromFile("images/box-reflections.bmp");
@@ -300,6 +374,7 @@ int main() {
 		grassMat->Set("s_Height", heightMap);
 		grassMat->Set("u_HeightIntensity", displacementIntensity);
 		grassMat->Set("u_Shininess", 2.0f);
+<<<<<<< HEAD
 		grassMat->Set("u_TextureMix", 0.3f);
 
 		waterMat->Set("s_Diffuse", water);
@@ -309,10 +384,30 @@ int main() {
 		waterMat->Set("u_DeepColor", deepColor);
 		waterMat->Set("u_MidColor", midColor);
 		waterMat->Set("u_ShoreColor", shoreColor);
+=======
+		grassMat->Set("u_TextureMix", 0.0f);
+
+		waterMat->Set("s_Diffuse", water);
+		waterMat->Set("s_Specular", noSpec);
+		waterMat->Set("u_waterTransparency", waterTransparency);
+		waterMat->Set("u_deepestColor", deepColor);
+		waterMat->Set("u_midColor", midColor);
+		waterMat->Set("u_shoreColor", shoreColor);
+>>>>>>> master
 		waterMat->Set("u_shoreCutoff", shoreCutoff);
 		waterMat->Set("u_midCutoff", midCutoff);
 		waterMat->Set("u_Shininess", 8.0f);
 		waterMat->Set("u_TextureMix", 0.0f);
+<<<<<<< HEAD
+=======
+
+		ShaderMaterial::sptr boxMat = ShaderMaterial::Create();
+		boxMat->Shader = shader;
+		boxMat->Set("s_Diffuse", box);
+		boxMat->Set("s_Specular", boxSpec);
+		boxMat->Set("u_Shininess", 8.0f);
+		boxMat->Set("u_TextureMix", 0.0f);
+>>>>>>> master
 
 		ShaderMaterial::sptr simpleFloraMat = ShaderMaterial::Create();
 		simpleFloraMat->Shader = shader;
@@ -321,25 +416,40 @@ int main() {
 		simpleFloraMat->Set("u_Shininess", 8.0f);
 		simpleFloraMat->Set("u_TextureMix", 0.0f);
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> master
 		VertexArrayObject::sptr planeVAO = ObjLoader::LoadFromFile("models/plane.obj");
 
 		GameObject obj1 = scene->CreateEntity("Ground"); 
 		{
 			obj1.emplace<RendererComponent>().SetMesh(planeVAO).SetMaterial(grassMat).SetCastShadow(false);
 		}
+<<<<<<< HEAD
 		
 		GameObject obj2 = scene->CreateEntity("monkey_quads");
+=======
+
+		GameObject obj2 = scene->CreateEntity("Water");
+>>>>>>> master
 		{
-			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/monkey_quads.obj");
-			obj2.emplace<RendererComponent>().SetMesh(vao).SetMaterial(stoneMat);
-			obj2.get<Transform>().SetLocalPosition(0.0f, 0.0f, 2.0f);
-			obj2.get<Transform>().SetLocalRotation(0.0f, 0.0f, -90.0f);
-			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(obj2);
+			obj2.emplace<RendererComponent>().SetMesh(planeVAO).SetMaterial(waterMat).SetCastShadow(false).SetIsTransparent(true);
 		}
 
+<<<<<<< HEAD
 		GameObject obj3 = scene->CreateEntity("Water");
 		{
 			obj3.emplace<RendererComponent>().SetMesh(planeVAO).SetMaterial(waterMat).SetCastShadow(false).SetIsTransparent(true);
+=======
+		GameObject obj3 = scene->CreateEntity("monkey_quads");
+		{
+			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/monkey_quads.obj");
+			obj3.emplace<RendererComponent>().SetMesh(vao).SetMaterial(stoneMat);
+			obj3.get<Transform>().SetLocalPosition(0.0f, 0.0f, 2.0f);
+			obj3.get<Transform>().SetLocalRotation(0.0f, 0.0f, -90.0f);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(obj3);
+>>>>>>> master
 		}
 
 		// Create an object to be our camera
@@ -437,7 +547,7 @@ int main() {
 			// use std::bind
 			keyToggles.emplace_back(GLFW_KEY_T, [&]() { cameraObject.get<Camera>().ToggleOrtho(); });
 
-			controllables.push_back(obj2);
+			controllables.push_back(obj3);
 
 			keyToggles.emplace_back(GLFW_KEY_KP_ADD, [&]() {
 				BehaviourBinding::Get<SimpleMoveBehaviour>(controllables[selectedVao])->Enabled = false;
@@ -457,7 +567,7 @@ int main() {
 			keyToggles.emplace_back(GLFW_KEY_Y, [&]() {
 				auto behaviour = BehaviourBinding::Get<SimpleMoveBehaviour>(controllables[selectedVao]);
 				behaviour->Relative = !behaviour->Relative;
-				});
+			});
 		}
 
 		// Initialize our timing instance and grab a reference for our use
@@ -471,6 +581,7 @@ int main() {
 			// Update the timing
 			time.CurrentFrame = glfwGetTime();
 			time.DeltaTime = static_cast<float>(time.CurrentFrame - time.LastFrame);
+			time.totalTime += time.DeltaTime;
 
 			time.totalTime += time.DeltaTime;
 
@@ -580,6 +691,10 @@ int main() {
 
 			waterMat->Set("u_WindowWidth", (float)width);
 			waterMat->Set("u_WindowHeight", (float)height);
+<<<<<<< HEAD
+=======
+
+>>>>>>> master
 
 			// Iterate over the render group components and draw them
 			renderGroup.each( [&](entt::entity e, RendererComponent& renderer, Transform& transform) {
@@ -594,6 +709,7 @@ int main() {
 					currentMat = renderer.Material;
 					currentMat->Apply();
 				}
+<<<<<<< HEAD
 				if (renderer.IsTransparent){
 					basicEffect->BindDepthAsTexture(0,29);
 					glDepthMask(GL_FALSE);
@@ -602,12 +718,28 @@ int main() {
 				// Render the mesh
 				BackendHandler::RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform, lightSpaceViewProj);
 			
+=======
+
+				if (renderer.IsTransparent)
+				{
+					basicEffect->BindDepthAsTexture(0, 29);
+					glDepthMask(GL_FALSE);
+				}
+
+				shadowBuffer->BindDepthAsTexture(30);
+				// Render the mesh
+				BackendHandler::RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform, lightSpaceViewProj);
+
+>>>>>>> master
 				if (renderer.IsTransparent)
 				{
 					basicEffect->UnbindTexture(29);
 					glDepthMask(GL_TRUE);
 				}
+<<<<<<< HEAD
 			
+=======
+>>>>>>> master
 			});
 			shadowBuffer->UnbindTexture(30);
 			basicEffect->UnbindBuffer();
